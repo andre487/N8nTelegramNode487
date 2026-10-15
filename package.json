@@ -1,0 +1,38 @@
+{
+  "name": "n8n-nodes-telegram487",
+  "version": "0.1.0",
+  "description": "Send Telegram photo albums from n8n binary data using an existing Telegram credential.",
+  "license": "MIT",
+  "author": "Andrey Prokopyuk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andre487/N8nTelegramNode487.git"
+  },
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "telegram",
+    "album"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "nodes"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "nodes/TelegramAlbum/TelegramAlbum.node.js"
+    ]
+  },
+  "dependencies": {
+    "form-data": "4.0.6"
+  },
+  "bundledDependencies": [
+    "form-data"
+  ]
+}
