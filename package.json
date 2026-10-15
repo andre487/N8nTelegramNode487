@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-telegram487",
-  "version": "0.1.0",
-  "description": "Send Telegram photo albums from n8n binary data using an existing Telegram credential.",
+  "version": "0.2.0",
+  "description": "Send Telegram binary photo albums and rich messages with file attachments using an existing Telegram credential.",
   "license": "MIT",
   "author": "Andrey Prokopyuk",
   "repository": {

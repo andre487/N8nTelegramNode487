@@ -88,10 +88,10 @@ test('invalid album count and media fail before making an HTTP request', async (
   const ctx = context('https://api.telegram.org');
   ctx.helpers.httpRequest = async () => { calls++; };
   for (const fields of ['first', Array.from({ length: 11 }, (_, i) => `photo${i}`).join(','), 'first,first', 'first,']) {
-    ctx.getNodeParameter = name => name === 'chatId' ? '487' : fields;
+    ctx.getNodeParameter = name => name === 'operation' ? 'sendMediaGroup' : name === 'chatId' ? '487' : fields;
     await assert.rejects(TelegramAlbum.prototype.execute.call(ctx), /2–10/);
   }
-  ctx.getNodeParameter = name => name === 'chatId' ? '487' : 'first,second';
+  ctx.getNodeParameter = name => name === 'operation' ? 'sendMediaGroup' : name === 'chatId' ? '487' : 'first,second';
   ctx.helpers.assertBinaryData = () => ({ mimeType: 'image/gif' });
   await assert.rejects(TelegramAlbum.prototype.execute.call(ctx), /JPEG or PNG/);
   ctx.helpers.assertBinaryData = () => ({ mimeType: 'image/png' });
@@ -130,4 +130,50 @@ test('binary streams are destroyed when upload fails', async () => {
   ctx.helpers.httpRequest = async () => { throw new Error('failure'); };
   await assert.rejects(TelegramAlbum.prototype.execute.call(ctx));
   assert.equal(stream.destroyed, true);
+});
+
+test('rich message uploads text and two documents in one multipart request', async () => {
+  let seen;
+  const richMessage = { blocks: [
+    { type: 'paragraph', text: [{ type: 'bold', text: 'App' }, '\nNotification <text>'] },
+    { type: 'document', document: { type: 'document', media: 'attach://file0' }, caption: { text: 'Аватар' } },
+    { type: 'document', document: { type: 'document', media: 'attach://file1' }, caption: { text: 'Значок приложения' } },
+  ] };
+  await withServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const form = await new Response(Buffer.concat(chunks), { headers: { 'Content-Type': request.headers['content-type'] } }).formData();
+    seen = { path: request.url, form };
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify({ ok: true, result: { message_id: 42 } }));
+  }, async url => {
+    const ctx = context(url);
+    ctx.getNodeParameter = name => ({ operation: 'sendRichMessage', chatId: '487',
+      binaryProperties: 'first,second', richMessage: JSON.stringify(richMessage) })[name];
+    const output = await TelegramAlbum.prototype.execute.call(ctx);
+    assert.equal(output[0].length, 1);
+    assert.equal(output[0][0].json.message.message_id, 42);
+    assert.deepEqual(output[0][0].pairedItem, { item: 0 });
+  });
+  assert.equal(seen.path, '/bot123:synthetic-token/sendRichMessage');
+  assert.deepEqual(JSON.parse(seen.form.get('rich_message')), richMessage);
+  assert.equal(await seen.form.get('file0').text(), 'png-fixture');
+  assert.equal(await seen.form.get('file1').text(), 'jpeg-fixture');
+  assert.equal(seen.form.has('media'), false);
+});
+
+test('rich message validation rejects ambiguous content and invalid success responses', async () => {
+  const ctx = context('https://api.telegram.org');
+  let richMessage;
+  ctx.getNodeParameter = name => ({ operation: 'sendRichMessage', chatId: '487',
+    binaryProperties: 'first,second', richMessage })[name];
+  let calls = 0;
+  ctx.helpers.httpRequest = async () => { calls++; return { statusCode: 200, body: { ok: true, result: [] } }; };
+  for (richMessage of ['{', {}, { blocks: [] }, { html: 'a', blocks: [{ type: 'paragraph', text: 'b' }] }]) {
+    await assert.rejects(TelegramAlbum.prototype.execute.call(ctx), /rich message|Rich message/);
+  }
+  assert.equal(calls, 0);
+  richMessage = { blocks: [{ type: 'paragraph', text: 'Test' }] };
+  await assert.rejects(TelegramAlbum.prototype.execute.call(ctx), /rejected/);
+  assert.equal(calls, 1);
 });

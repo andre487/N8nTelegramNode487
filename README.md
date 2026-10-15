@@ -1,6 +1,6 @@
 # N8nTelegramNode487
 
-An MIT-licensed n8n node for uploading **2–10 JPEG/PNG images as one Telegram album**.
+An MIT-licensed n8n node for uploading **2–10 JPEG/PNG images as one Telegram album**, or a rich message containing text and JPEG/PNG documents.
 Uses the existing **Telegram API** credential. No bot token in workflow JSON, environment
 variable, intermediary chat or public image storage is required.
 
@@ -13,7 +13,25 @@ Add **Telegram Album 487**, select your Telegram credential, enter **Chat ID**, 
 a message for every image. Network/API errors fail the node; no automatic request retry is
 performed inside the node, since retrying a sent album can duplicate messages.
 
-This node only adds the binary album operation missing from the standard Telegram node.
+Choose **Send Rich Message** to send text and files together. Supply Telegram
+`InputRichMessage` JSON in **Rich Message** and reference the binary fields in order as
+`attach://file0`, `attach://file1`, etc. For example:
+
+```json
+{"blocks":[
+  {"type":"paragraph","text":"Notification text"},
+  {"type":"document","document":{"type":"document","media":"attach://file0"},"caption":{"text":"Avatar"}},
+  {"type":"document","document":{"type":"document","media":"attach://file1"},"caption":{"text":"Application icon"}}
+]}
+```
+
+A rich-message request returns `{ message: {...} }`, representing one message. Each file
+must be JPEG/PNG; up to ten can be attached. Text-only rich messages may leave Binary Fields
+empty. Requires Telegram Bot API support for Rich Messages, including document blocks
+(Bot API 10.3+). Client rendering varies by Telegram version. Old saved album nodes keep
+working without setting the new Operation field.
+
+
 Use the standard node for individual photos, documents and text. Albums larger than ten
 must be split upstream; a remaining single image must use **Send Photo**.
 
@@ -40,7 +58,7 @@ extension directory, for example:
 
 ```sh
 mkdir -p ~/.n8n/custom/TelegramAlbum487
-tar -xzf n8n-nodes-telegram487-0.1.0.tgz --strip-components=1 -C ~/.n8n/custom/TelegramAlbum487
+tar -xzf n8n-nodes-telegram487-0.2.0.tgz --strip-components=1 -C ~/.n8n/custom/TelegramAlbum487
 ```
 
 Restart n8n to load it.
