@@ -26,7 +26,7 @@ Choose **Send Rich Message** to send text and files together. Supply Telegram
 ```
 
 A rich-message request returns `{ message: {...} }`, representing one message. Each file
-must be JPEG/PNG; up to ten can be attached. Text-only rich messages may leave Binary Fields
+must be JPEG/PNG; file-count and layout limits are enforced by Telegram, independently of the ten-photo album limit. Text-only rich messages may leave Binary Fields
 empty. Requires Telegram Bot API support for Rich Messages, including document blocks
 (Bot API 10.3+). Client rendering varies by Telegram version. Old saved album nodes keep
 working without setting the new Operation field.
@@ -58,7 +58,7 @@ extension directory, for example:
 
 ```sh
 mkdir -p ~/.n8n/custom/TelegramAlbum487
-tar -xzf n8n-nodes-telegram487-0.2.0.tgz --strip-components=1 -C ~/.n8n/custom/TelegramAlbum487
+tar -xzf n8n-nodes-telegram487-0.2.1.tgz --strip-components=1 -C ~/.n8n/custom/TelegramAlbum487
 ```
 
 Restart n8n to load it.

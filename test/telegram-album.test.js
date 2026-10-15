@@ -177,3 +177,20 @@ test('rich message validation rejects ambiguous content and invalid success resp
   await assert.rejects(TelegramAlbum.prototype.execute.call(ctx), /rejected/);
   assert.equal(calls, 1);
 });
+
+test('the album limit does not truncate rich-message attachments', async () => {
+  const ctx = context('https://api.telegram.org');
+  const fields = Array.from({ length: 11 }, (_, index) => `image${index}`);
+  ctx.getNodeParameter = name => ({ operation: 'sendRichMessage', chatId: '487',
+    binaryProperties: fields.join(','), richMessage: { blocks: fields.map((_, index) => ({
+      type: 'photo', photo: { type: 'photo', media: `attach://file${index}` },
+    })) } })[name];
+  ctx.helpers.assertBinaryData = () => ({ mimeType: 'image/png' });
+  ctx.helpers.getBinaryDataBuffer = async () => Buffer.from('fixture');
+  ctx.helpers.httpRequest = async options => {
+    assert.ok(options.body.getBuffer().includes(Buffer.from('name="file10"')));
+    return { statusCode: 200, body: { ok: true, result: { message_id: 11 } } };
+  };
+  const output = await TelegramAlbum.prototype.execute.call(ctx);
+  assert.equal(output[0][0].json.message.message_id, 11);
+});

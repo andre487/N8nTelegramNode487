@@ -29,7 +29,7 @@ class TelegramAlbum {
       {
         displayName: 'Binary Fields', name: 'binaryProperties', type: 'string',
         default: 'image0,image1', required: true,
-        description: 'Comma-separated binary fields: 2–10 album photos, or up to 10 rich-message files (file0, file1, ...)',
+        description: 'Comma-separated binary fields: 2–10 album photos, or rich-message files (file0, file1, ...)',
       },
       {
         displayName: 'Rich Message', name: 'richMessage', type: 'json', required: true,
@@ -56,9 +56,9 @@ class TelegramAlbum {
       const chatId = String(this.getNodeParameter('chatId', itemIndex)).trim();
       const fields = String(this.getNodeParameter('binaryProperties', itemIndex)).split(',').map(field => field.trim());
       if (rich && fields.length === 1 && fields[0] === '') fields.pop();
-      if (!chatId || (!rich && fields.length < 2) || fields.length > 10 ||
+      if (!chatId || (!rich && (fields.length < 2 || fields.length > 10)) ||
           new Set(fields).size !== fields.length || fields.some(field => !field)) {
-        throw new Error(rich ? 'A rich message requires a chat ID and at most 10 distinct binary fields' : 'An album requires a chat ID and 2–10 distinct binary fields');
+        throw new Error(rich ? 'A rich message requires a chat ID and distinct binary fields' : 'An album requires a chat ID and 2–10 distinct binary fields');
       }
       const form = new FormData();
       const streams = [];
